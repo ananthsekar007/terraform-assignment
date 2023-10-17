@@ -58,30 +58,15 @@ module "traffic_manager" {
   traffic_manager_profile_name = var.traffic_manager_profile_name
 }
 
-
-resource "azurerm_mysql_flexible_server" "sql_server" {
-  name = var.mysql_server_name
+module "server" {
+  source = "./modules/db_server/mysql"
+  admin_password = var.admin_password
+  admin_user = var.admin_user
   location = module.rg.rg_location
-  resource_group_name = module.rg.rg_name
-  administrator_login = var.admin_user
-  administrator_password = var.admin_password
+  rg_name = module.rg.rg_name
+  private_endpoint_name = var.mysql_server_private_endpoint_name
+  server_name = var.mysql_server_name
   sku_name = "GP_Standard_D2ds_v4"
-  storage {
-    iops    = 360
-    size_gb = 20
-  }
+  subnet_id = module.networking.subnets["AppSubnet"].id
   zone = 3
-}
-
-resource "azurerm_private_endpoint" "name" {
-  name                = var.mysql_server_private_endpoint_name
-  location            = module.rg.rg_location
-  resource_group_name = module.rg.rg_name
-  subnet_id           = azurerm_subnet.vmss_subnets["AppSubnet"].id
-  private_service_connection {
-    name                           = "privateconnection"
-    subresource_names              = [var.mysql_server_name]
-    is_manual_connection           = false
-    private_connection_resource_id = azurerm_mysql_flexible_server.sql_server.id
-  }
 }
