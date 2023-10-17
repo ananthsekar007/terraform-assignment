@@ -1,6 +1,6 @@
 resource "azurerm_virtual_network" "vmss_vnet" {
   name                = var.vnet_name
-  address_space       = [ var.var.cidr_block ]
+  address_space       = [ var.cidr_block ]
   location            = var.location
   resource_group_name = var.rg_name
   tags                = var.common_tags

@@ -14,12 +14,12 @@ resource "azurerm_mysql_flexible_server" "sql_server" {
 
 resource "azurerm_private_endpoint" "private_endpoint" {
   name                = var.private_endpoint_name
-  location            = module.rg.rg_location
-  resource_group_name = module.rg.rg_name
+  location            = var.location
+  resource_group_name = var.rg_name
   subnet_id           = var.subnet_id
   private_service_connection {
     name                           = "privateconnection"
-    subresource_names              = [ var.server_name ]
+    subresource_names              = [ "mysqlServer" ]
     is_manual_connection           = false
     private_connection_resource_id = azurerm_mysql_flexible_server.sql_server.id
   }

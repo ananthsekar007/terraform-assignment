@@ -1,6 +1,6 @@
 resource "azurerm_traffic_manager_profile" "traffic_manager_profile" {
   name                   = var.traffic_manager_profile_name
-  resource_group_name    = module.rg.rg_name
+  resource_group_name    = var.rg_name
   traffic_routing_method = "Weighted"
   dns_config {
     relative_name = var.traffic_manager_profile_name
@@ -22,5 +22,5 @@ resource "azurerm_traffic_manager_azure_endpoint" "tm_endpoint" {
   name               = var.traffic_manager_endpoint_name
   profile_id         = azurerm_traffic_manager_profile.traffic_manager_profile.id
   weight             = 100
-  target_resource_id = azurerm_public_ip.vmss_public_ip.id
+  target_resource_id = var.public_ip_id
 }

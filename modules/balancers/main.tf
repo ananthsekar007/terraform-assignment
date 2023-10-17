@@ -1,7 +1,7 @@
 resource "azurerm_lb" "vmss_load_balancer" {
   name                = var.load_balancer_name
   location            = var.location
-  resource_group_name = module.rg.rg_name
+  resource_group_name = var.rg_name
 
   frontend_ip_configuration {
     name                 = "PublicIPAddress"
