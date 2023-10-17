@@ -16,24 +16,26 @@ terraform {
   }
 }
 
-resource "azurerm_resource_group" "rg" {
-  name     = var.resource_group_name
+module "rg" {
+  source = "./modules/resource_group"
+  rg_name = var.resource_group_name
   location = var.location
-  tags     = var.tags
+  common_tags = var.tags
 }
+
 
 resource "azurerm_virtual_network" "vmss_vnet" {
   name                = var.vnet_name
   address_space       = ["10.0.0.0/16"]
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = module.rg.rg_name
   tags                = var.tags
 }
 
 resource "azurerm_subnet" "vmss_subnets" {
   for_each             = var.subnet_names
   name                 = each.key
-  resource_group_name  = azurerm_resource_group.rg.name
+  resource_group_name  = module.rg.rg_name
   virtual_network_name = azurerm_virtual_network.vmss_vnet.name
   address_prefixes     = ["10.0.${each.value}.0/24"]
 }
@@ -41,7 +43,7 @@ resource "azurerm_subnet" "vmss_subnets" {
 resource "azurerm_public_ip" "vmss_public_ip" {
   name                = var.vmss_public_ip_name
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = module.rg.rg_name
   allocation_method   = "Static"
   tags                = var.tags
   domain_name_label   = "lbdomainname"
@@ -50,7 +52,7 @@ resource "azurerm_public_ip" "vmss_public_ip" {
 resource "azurerm_lb" "vmss_load_balancer" {
   name                = var.load_balancer_name
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = module.rg.rg_name
 
   frontend_ip_configuration {
     name                 = "PublicIPAddress"
@@ -66,14 +68,14 @@ resource "azurerm_lb_backend_address_pool" "backend_address_pool" {
 }
 
 resource "azurerm_lb_probe" "vmss_probe" {
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = module.rg.rg_name
   loadbalancer_id     = azurerm_lb.vmss_load_balancer.id
   name                = "ssh-probe"
   port                = var.application_port
 }
 
 resource "azurerm_lb_rule" "lbnatrule" {
-  resource_group_name            = azurerm_resource_group.rg.name
+  resource_group_name            = module.rg.rg_name
   loadbalancer_id                = azurerm_lb.vmss_load_balancer.id
   name                           = "http"
   protocol                       = "Tcp"
@@ -87,7 +89,7 @@ resource "azurerm_lb_rule" "lbnatrule" {
 resource "azurerm_virtual_machine_scale_set" "vmss" {
   name                = var.vmss_name
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = module.rg.rg_name
   upgrade_policy_mode = "Manual"
 
   sku {
@@ -145,7 +147,7 @@ resource "azurerm_virtual_machine_scale_set" "vmss" {
 
 resource "azurerm_traffic_manager_profile" "traffic_manager_profile" {
   name                   = var.traffic_manager_profile_name
-  resource_group_name    = azurerm_resource_group.rg.name
+  resource_group_name    = module.rg.rg_name
   traffic_routing_method = "Weighted"
   dns_config {
     relative_name = var.traffic_manager_profile_name
@@ -172,8 +174,8 @@ resource "azurerm_traffic_manager_azure_endpoint" "example" {
 
 resource "azurerm_mysql_flexible_server" "sql_server" {
   name = var.mysql_server_name
-  location = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location = module.rg.rg_location
+  resource_group_name = module.rg.rg_name
   administrator_login = var.admin_user
   administrator_password = var.admin_password
   sku_name = "GP_Standard_D2ds_v4"
@@ -181,12 +183,13 @@ resource "azurerm_mysql_flexible_server" "sql_server" {
     iops    = 360
     size_gb = 20
   }
+  zone = 3
 }
 
 resource "azurerm_private_endpoint" "name" {
   name                = var.mysql_server_private_endpoint_name
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = module.rg.rg_location
+  resource_group_name = module.rg.rg_name
   subnet_id           = azurerm_subnet.vmss_subnets["AppSubnet"].id
   private_service_connection {
     name                           = "privateconnection"
