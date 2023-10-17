@@ -50,32 +50,14 @@ module "compute" {
   location = var.location
 }
 
-resource "azurerm_traffic_manager_profile" "traffic_manager_profile" {
-  name                   = var.traffic_manager_profile_name
-  resource_group_name    = module.rg.rg_name
-  traffic_routing_method = "Weighted"
-  dns_config {
-    relative_name = var.traffic_manager_profile_name
-    ttl           = 100
-  }
-  monitor_config {
-    protocol                     = "HTTP"
-    port                         = var.application_port
-    path                         = "/"
-    interval_in_seconds          = 30
-    timeout_in_seconds           = 9
-    tolerated_number_of_failures = 3
-  }
-
-  tags = var.tags
+module "traffic_manager" {
+  source = "./modules/traffic_manager"
+  application_port = var.application_port
+  common_tags = var.tags
+  traffic_manager_endpoint_name = var.traffic_manager_endpoint_name
+  traffic_manager_profile_name = var.traffic_manager_profile_name
 }
 
-resource "azurerm_traffic_manager_azure_endpoint" "example" {
-  name               = var.traffic_manager_endpoint_name
-  profile_id         = azurerm_traffic_manager_profile.traffic_manager_profile.id
-  weight             = 100
-  target_resource_id = azurerm_public_ip.vmss_public_ip.id
-}
 
 resource "azurerm_mysql_flexible_server" "sql_server" {
   name = var.mysql_server_name
