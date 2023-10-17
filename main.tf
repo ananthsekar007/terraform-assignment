@@ -1,43 +1,19 @@
-terraform {
-  required_version = ">=0.12"
-
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~>2.0"
-    }
-  }
-
-  backend "azurerm" {
-    resource_group_name  = "ananth-group"
-    storage_account_name = "terraformstateananth"
-    container_name       = "terraform-global-state"
-    key                  = "terraform.tfstate"
-  }
-}
 
 module "rg" {
   source = "./modules/resource_group"
-  rg_name = var.resource_group_name
+  rg_name = [ var.resource_group_name ]
   location = var.location
   common_tags = var.tags
 }
 
-
-resource "azurerm_virtual_network" "vmss_vnet" {
-  name                = var.vnet_name
-  address_space       = ["10.0.0.0/16"]
-  location            = var.location
-  resource_group_name = module.rg.rg_name
-  tags                = var.tags
-}
-
-resource "azurerm_subnet" "vmss_subnets" {
-  for_each             = var.subnet_names
-  name                 = each.key
-  resource_group_name  = module.rg.rg_name
-  virtual_network_name = azurerm_virtual_network.vmss_vnet.name
-  address_prefixes     = ["10.0.${each.value}.0/24"]
+module "networking" {
+  source = "./modules/networking"
+  cidr_block = var.vnet_address
+  subnet_names = var.subnet_names
+  location = var.location
+  vnet_name = var.vnet_name
+  common_tags = var.tags
+  rg_name = module.rg.rg_name
 }
 
 resource "azurerm_public_ip" "vmss_public_ip" {

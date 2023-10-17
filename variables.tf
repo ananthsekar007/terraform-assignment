@@ -1,9 +1,16 @@
 variable "resource_group_name" {
   description = "Name of the resource group in which the resources will be created"
+  type = string
 }
 
 variable "vnet_name" {
   description = "Name of the Vnet which is created!"
+  type = string
+}
+
+variable "vnet_address" {
+  description = "The value of the cidr block"
+  type = string
 }
 
 variable "subnet_names" {
@@ -13,6 +20,7 @@ variable "subnet_names" {
 
 variable "location" {
   description = "Location where resources will be created"
+  type = string
 }
 
 variable "tags" {
@@ -26,14 +34,17 @@ variable "tags" {
 
 variable "application_port" {
   description = "Port that you want to expose to the external load balancer"
+  type = string
 }
 
 variable "admin_user" {
   description = "User name to use as the admin account on the VMs that will be part of the VM scale set"
+  type = string
 }
 
 variable "admin_password" {
   description = "Default password for admin account"
+  type = string
 }
 
 variable "vmss_public_ip_name" {
