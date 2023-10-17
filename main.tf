@@ -1,11 +1,3 @@
-
-# module "rg" {
-#   source = "./modules/resource_group"
-#   rg_name = [ var.resource_group_name ]
-#   location = var.location
-#   common_tags = var.tags
-# }
-
 resource azurerm_resource_group rg_old {
   name = var.resource_group_name
   location = var.location
@@ -77,4 +69,40 @@ module "server" {
   sku_name = "GP_Standard_D2ds_v4"
   subnet_id = module.networking.subnets["AppSubnet"].id
   zone = 3
+}
+
+resource "azurerm_private_endpoint" "private_endpoint" {
+  name                = var.mysql_server_private_endpoint_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = module.networking.subnets["AppSubnet"].id
+  private_service_connection {
+    name                           = "privateconnection"
+    subresource_names              = [ "mysqlServer" ]
+    is_manual_connection           = false
+    private_connection_resource_id = module.server.sql.id
+  }
+}
+
+module "secondary_networking"  {
+  source = "./modules/networking"
+  cidr_block = var.secondary_vnet_address
+  subnet_names = var.secondary_subnet_names
+  location = var.secondary_location
+  vnet_name = var.secondary_vnet_name
+  common_tags = var.tags
+  rg_name = var.resource_group_name
+}
+
+module "secondary_server" {
+  source = "./modules/db_server/mysql"
+  admin_password = var.admin_password
+  admin_user = var.admin_user
+  location = var.secondary_location
+  rg_name = var.resource_group_name
+  private_endpoint_name = var.mysql_server_private_endpoint_name
+  server_name = var.secondary_mysql_server_name
+  sku_name = "GP_Standard_D2ds_v4"
+  subnet_id = module.secondary_networking.subnets["DBSubnet"].id
+  zone = null
 }

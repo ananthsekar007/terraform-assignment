@@ -8,6 +8,21 @@ variable "vnet_name" {
   type = string
 }
 
+variable "secondary_vnet_name" {  
+  description = "Name of the secondary vnet created"
+  type = string
+}
+
+variable "secondary_subnet_names" {
+  description = "The names of the secondary subnets to be created within the secondary vnet"
+  type        = map(string)
+}
+
+variable "secondary_vnet_address" {
+  description = "The value of the secondary cidr block"
+  type = string
+}
+
 variable "vnet_address" {
   description = "The value of the cidr block"
   type = string
@@ -20,6 +35,11 @@ variable "subnet_names" {
 
 variable "location" {
   description = "Location where resources will be created"
+  type = string
+}
+
+variable "secondary_location" {
+  description = "Secondary Location where resources will be created"
   type = string
 }
 
@@ -75,6 +95,11 @@ variable "traffic_manager_endpoint_name" {
 variable "mysql_server_name" {
   description = "The name of the MySql Server"
   type        = string
+}
+
+variable "secondary_mysql_server_name" {
+  description = "The name of the secondary MySql server"
+  type = string 
 }
 
 variable "mysql_database_name" {

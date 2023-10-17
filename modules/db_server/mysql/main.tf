@@ -12,15 +12,15 @@ resource "azurerm_mysql_flexible_server" "sql_server" {
   zone = var.zone
 }
 
-resource "azurerm_private_endpoint" "private_endpoint" {
-  name                = var.private_endpoint_name
-  location            = var.location
-  resource_group_name = var.rg_name
-  subnet_id           = var.subnet_id
-  private_service_connection {
-    name                           = "privateconnection"
-    subresource_names              = [ "mysqlServer" ]
-    is_manual_connection           = false
-    private_connection_resource_id = azurerm_mysql_flexible_server.sql_server.id
-  }
-}
+# resource "azurerm_private_endpoint" "private_endpoint" {
+#   name                = var.private_endpoint_name
+#   location            = var.location
+#   resource_group_name = var.rg_name
+#   subnet_id           = var.subnet_id
+#   private_service_connection {
+#     name                           = "privateconnection"
+#     subresource_names              = [ "mysqlServer" ]
+#     is_manual_connection           = false
+#     private_connection_resource_id = azurerm_mysql_flexible_server.sql_server.id
+#   }
+# }
