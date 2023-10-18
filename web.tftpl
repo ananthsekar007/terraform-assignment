@@ -1,0 +1,30 @@
+  #cloud-config
+
+  write_files:
+    - path: /var/www/html/index.html
+      content: |
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Hello, World </title>
+          </head>
+          <body>
+            <h1>Hello, World from VM-1 !</h1>
+          </body>
+        </html>
+    - path : /var/www/html/database.php
+      content: |
+        <?php
+        $conn = new mysqli("${host}", "${username}", "${password}");
+        if($conn->connect_error) {
+            echo "Unable to connect to DB";
+        } else {
+            echo "Connected to DB";
+        }
+        ?>
+
+  runcmd:
+    - sudo apt update -y
+    - sudo apt install apache2 -y
+    - sudo apt install -y php libapache2-mod-php php-mysql
+    - systemctl start apache2

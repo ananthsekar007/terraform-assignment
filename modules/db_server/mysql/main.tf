@@ -10,6 +10,7 @@ resource "azurerm_mysql_flexible_server" "sql_server" {
     size_gb = 20
   }
   zone = var.zone
+  geo_redundant_backup_enabled = true
 }
 
 # resource "azurerm_private_endpoint" "private_endpoint" {

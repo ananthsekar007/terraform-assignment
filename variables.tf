@@ -111,3 +111,13 @@ variable "mysql_server_private_endpoint_name" {
   description = "The name of the private endpoint"
   type = string
 }
+
+variable "restore_server_name" {
+  description = "The name of the restore server"
+  type = string
+}
+
+variable "restore_sku_name" {
+  description = "SKU of the restore server"
+  type = string
+}

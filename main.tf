@@ -1,4 +1,4 @@
-resource azurerm_resource_group rg_old {
+resource azurerm_resource_group rg {
   name = var.resource_group_name
   location = var.location
 }
@@ -22,6 +22,32 @@ resource "azurerm_public_ip" "vmss_public_ip" {
   domain_name_label   = "lbdomainname"
 }
 
+module "server" {
+  source = "./modules/db_server/mysql"
+  admin_password = var.admin_password
+  admin_user = var.admin_user
+  location = var.location
+  rg_name = var.resource_group_name
+  private_endpoint_name = var.mysql_server_private_endpoint_name
+  server_name = var.mysql_server_name
+  sku_name = "GP_Standard_D2ds_v4"
+  subnet_id = module.networking.subnets["AppSubnet"].id
+  zone = 3
+}
+
+resource "azurerm_private_endpoint" "private_endpoint" {
+  name                = var.mysql_server_private_endpoint_name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = module.networking.subnets["DbSubnet"].id
+  private_service_connection {
+    name                           = "privateconnection"
+    subresource_names              = [ "mysqlServer" ]
+    is_manual_connection           = false
+    private_connection_resource_id = module.server.sql.id
+  }
+}
+
 module "load_balancing" {
   source = "./modules/balancers"
   application_port = var.application_port
@@ -38,7 +64,11 @@ module "compute" {
   admin_user = var.admin_user
   backend_address_pool_ids = [ module.load_balancing.lb_backend_address_pool.id ]
   common_tags = var.tags
-  custom_script = file("web.conf")
+  custom_script = base64encode(templatefile("web.tftpl", {
+    host = azurerm_private_endpoint.private_endpoint.private_service_connection[0].private_ip_address
+    username = "${var.admin_user}@${var.mysql_server_name}"
+    password = var.admin_password
+  }))
   disable_password_authentication = false
   initial_vm_count = 2
   sku_name = "Standard_DS1_v2"
@@ -58,31 +88,6 @@ module "traffic_manager" {
   rg_name = var.resource_group_name
 }
 
-module "server" {
-  source = "./modules/db_server/mysql"
-  admin_password = var.admin_password
-  admin_user = var.admin_user
-  location = var.location
-  rg_name = var.resource_group_name
-  private_endpoint_name = var.mysql_server_private_endpoint_name
-  server_name = var.mysql_server_name
-  sku_name = "GP_Standard_D2ds_v4"
-  subnet_id = module.networking.subnets["AppSubnet"].id
-  zone = 3
-}
-
-resource "azurerm_private_endpoint" "private_endpoint" {
-  name                = var.mysql_server_private_endpoint_name
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = module.networking.subnets["AppSubnet"].id
-  private_service_connection {
-    name                           = "privateconnection"
-    subresource_names              = [ "mysqlServer" ]
-    is_manual_connection           = false
-    private_connection_resource_id = module.server.sql.id
-  }
-}
 
 module "secondary_networking"  {
   source = "./modules/networking"
@@ -104,5 +109,19 @@ module "secondary_server" {
   server_name = var.secondary_mysql_server_name
   sku_name = "GP_Standard_D2ds_v4"
   subnet_id = module.secondary_networking.subnets["DBSubnet"].id
+  zone = null
+}
+
+resource "azurerm_mysql_flexible_server" "restore_sql_server" {
+  name = var.restore_server_name
+  location = var.secondary_location
+  resource_group_name = var.resource_group_name
+  administrator_login = var.admin_user
+  administrator_password = var.admin_password
+  sku_name = var.restore_sku_name
+  storage {
+    iops    = 360
+    size_gb = 20
+  }
   zone = null
 }
